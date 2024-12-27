@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 )
 
 func main() {
@@ -10,5 +11,8 @@ func main() {
 }
 
 func cleanInput(text string) []string {
-	lowerString := string.ToLower(tex)
+	lowerString := strings.ToLower(text)
+	sliceString := strings.Fields(lowerString)
+	return sliceString
+
 }
