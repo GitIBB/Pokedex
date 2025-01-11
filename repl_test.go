@@ -19,7 +19,7 @@ func TestCleanInput(t *testing.T) {
 		},
 		{
 			input:    " bUt KeTcHuP is my FAVOURITE ",
-			expected: []string{"bUt", "KeTcHuP", "is", "my", "FAVOURITE"},
+			expected: []string{"but", "ketchup", "is", "my", "favourite"},
 		},
 	}
 
