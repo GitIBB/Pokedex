@@ -5,23 +5,32 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/GitIBB/pokedex/internal/pokeapi"
 )
 
 type cliCommand struct {
 	name        string
 	description string
-	callback    func() error
+	callback    func(*Config) error
+}
+
+// Config struct for API url pagination
+type Config struct {
+	Next          *string
+	Previous      *string
+	pokeapiClient *pokeapi.Client
 }
 
 var commands map[string]cliCommand
 
-func commandExit() error {
+func commandExit(cfg *Config) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
 }
 
-func commandHelp() error {
+func commandHelp(cfg *Config) error {
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Println("Usage:")
 	fmt.Println()
@@ -32,7 +41,51 @@ func commandHelp() error {
 	return nil
 }
 
+// Command for showing next map page
+func commandMap(cfg *Config) error {
+	// Set Url
+	locationResp, err := cfg.pokeapiClient.GetLocationAreas(cfg.Next)
+	if err != nil {
+		return err
+	}
+
+	// Update config
+	cfg.Next = locationResp.Next
+	cfg.Previous = locationResp.Previous
+
+	// Print locations
+	for _, area := range locationResp.Results {
+		fmt.Println(area.Name)
+	}
+	return nil
+}
+
+// Command for showing previous map page
+func commandMapb(cfg *Config) error {
+	if cfg.Previous == nil {
+		fmt.Println("You are on the first page")
+		return nil
+	}
+
+	locationResp, err := cfg.pokeapiClient.GetLocationAreas(cfg.Previous)
+	if err != nil {
+		return err
+	}
+	// Update config
+	cfg.Next = locationResp.Next
+	cfg.Previous = locationResp.Previous
+
+	// Print locations
+	for _, area := range locationResp.Results {
+		fmt.Println(area.Name)
+	}
+	return nil
+
+}
+
 func main() {
+	// Create config
+	cfg := &Config{}
 	// Initialize command map
 	commands = map[string]cliCommand{
 		"exit": {
@@ -46,6 +99,18 @@ func main() {
 			name:        "help",
 			description: "Displays a help message",
 			callback:    commandHelp,
+		},
+		// Map command
+		"map": {
+			name:        "map",
+			description: "Shows the next 20 location areas",
+			callback:    commandMap,
+		},
+		// Map(back) command
+		"mapb": {
+			name:        "mapb",
+			description: "Shows the previous 20 location areas",
+			callback:    commandMapb,
 		},
 	}
 	// Initialize scanner variable
@@ -69,7 +134,7 @@ func main() {
 
 			// Use commandKey to look up the command
 			if cmd, exists := commands[commandKey]; exists {
-				if err := cmd.callback(); err != nil {
+				if err := cmd.callback(cfg); err != nil {
 					fmt.Println("Error:", err)
 				}
 			} else {
@@ -80,6 +145,7 @@ func main() {
 	}
 }
 
+// Cleans terminal input
 func cleanInput(text string) []string {
 	lowerString := strings.ToLower(text)
 	sliceString := strings.Fields(lowerString)
